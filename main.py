@@ -2075,19 +2075,34 @@ def _create_fallback_json(model_cls) -> str:
     class_name = model_cls.__name__
     return fallbacks.get(class_name, '{"error": "Fallback not available"}')
 
-async def generate_all(product_idea: str, model_name: str = None):
+async def generate_all(product_idea: str, model_name: str = None, progress_callback=None):
     if model_name is None:
         model_name = MODEL_NAME
         
     prompts = get_enhanced_prompts(product_idea)
+    agent_names = [
+        "🎨 Brand Strategist", "🏗️ Principal Architect", "📋 Senior PM", 
+        "📑 VP Product", "📅 Program Manager", "💼 Business Analyst",
+        "🎨 UX/UI Designer", "🧪 QA Test Architect", "🗄️ Data Architect", 
+        "🚀 DevOps Engineer"
+    ]
+    
     timeout = aiohttp.ClientTimeout(total=300, connect=30)  # 5 dk total, 30s bağlantı
     async with aiohttp.ClientSession(timeout=timeout) as session:
-        tasks = [
-            call_agent_async(session, role, prompt, require_json=True, timeout=120, model_name=model_name)
-            for role, prompt, _ in prompts
-        ]
-        results = await asyncio.gather(*tasks)
+        results = []
+        
+        # Her ajanı sırayla çalıştır ve progress güncellee
+        for i, (role, prompt, _) in enumerate(prompts):
+            if progress_callback:
+                progress = 20 + (i * 50 // len(prompts))  # 20-70 arası progress
+                progress_callback(progress, f"🤖 {agent_names[i]} çalışıyor...")
+            
+            result = await call_agent_async(session, role, prompt, require_json=True, timeout=120, model_name=model_name)
+            results.append(result)
 
+    if progress_callback:
+        progress_callback(70, "🔄 AI yanıtları işleniyor...")
+    
     branding = _to_model(prompts[0][2], results[0])
     technical = _to_model(prompts[1][2], results[1])
     features = _to_model(prompts[2][2], results[2])
@@ -2112,7 +2127,14 @@ async def generate_all(product_idea: str, model_name: str = None):
         devops_pipeline=devops_pipeline
     )
 
+    if progress_callback:
+        progress_callback(80, "📝 Dokümanlar oluşturuluyor...")
+    
     md_content = docs_to_markdown(docs)
+    
+    if progress_callback:
+        progress_callback(90, "🗂️ IDE görevleri hazırlanıyor...")
+    
     ide_tasks_md = await generate_ide_kanban(md_content)
 
     # Ek olarak, docs'tan hiyerarşik görev planı üret
@@ -2121,6 +2143,9 @@ async def generate_all(product_idea: str, model_name: str = None):
     except Exception:
         tasks_plan = None
 
+    if progress_callback:
+        progress_callback(100, "✅ Tamamlandı!")
+    
     return docs, md_content, ide_tasks_md, tasks_plan
 
 # ==========================
@@ -2280,17 +2305,18 @@ if st.button("🚀 Doküman ve IDE Görevlerini Oluştur"):
             progress_bar = st.progress(0)
             status_text = st.empty()
             
-            status_text.text("🚀 İşlem başlatılıyor...")
-            progress_bar.progress(10)
-            
             try:
-                status_text.text("🤖 10 uzman AI ajanı çalışmaya başladı...")
-                progress_bar.progress(20)
+                # Progress callback function
+                def update_progress(progress_value, status_message):
+                    progress_bar.progress(progress_value)
+                    status_text.text(status_message)
                 
-                docs, product_md, ide_tasks_md, tasks_plan = asyncio.run(generate_all(sanitized_idea, selected_model))
+                # Initial progress
+                update_progress(10, "🚀 İşlem başlatılıyor...")
                 
-                status_text.text("🔍 Doküman kalite kontrolü yapılıyor...")
-                progress_bar.progress(90)
+                docs, product_md, ide_tasks_md, tasks_plan = asyncio.run(
+                    generate_all(sanitized_idea, selected_model, progress_callback=update_progress)
+                )
                 
                 # Document validation
                 validation_results = validate_document_quality(docs)
