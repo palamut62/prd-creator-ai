@@ -1,0 +1,11 @@
+# env and local configs
+.env
+.env.*
+.streamlit/secrets.toml
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# generated outputs
+outputs/
+
