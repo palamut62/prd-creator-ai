@@ -1,6 +1,8 @@
 # env and local configs
 .env
-.env.*
+.env.local
+.env.*.local
+!.env.example
 .streamlit/secrets.toml
 __pycache__/
 .pytest_cache/
