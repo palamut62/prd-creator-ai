@@ -2228,8 +2228,56 @@ Return only the markdown content, no additional text."""
     
     return result
 
+async def detect_domain_and_context(product_idea: str, model_name: str) -> dict:
+    """Detect the domain/industry and extract key context for template customization."""
+    
+    domain_prompt = f"""Analyze this product idea and extract key information for template customization:
+
+Product Idea: {product_idea}
+
+Return a JSON object with these fields:
+{{
+  "domain": "industry/domain name (e.g., healthcare, e-commerce, field-service, education, etc.)",
+  "core_entity": "main business object (e.g., Task, Product, Patient, Order, etc.)",
+  "user_type": "primary user type (e.g., Technician, Customer, Doctor, Student, etc.)",
+  "platform_type": "platform (e.g., iOS, Android, Web, Cross-platform)",
+  "key_workflows": ["main workflow 1", "main workflow 2", "main workflow 3"],
+  "integration_needs": ["external service 1", "external service 2"],
+  "complexity_level": "basic/standard/enterprise"
+}}
+
+Focus on identifying the core domain and business context."""
+
+    timeout = aiohttp.ClientTimeout(total=60, connect=30)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        result = await call_agent_async(
+            session, 
+            "Domain Analysis Agent", 
+            domain_prompt, 
+            require_json=True, 
+            timeout=30, 
+            model_name=model_name
+        )
+    
+    try:
+        return json.loads(result) if isinstance(result, str) else result
+    except:
+        # Fallback context
+        return {
+            "domain": "general",
+            "core_entity": "Item",
+            "user_type": "User",
+            "platform_type": "Mobile",
+            "key_workflows": ["Create", "Read", "Update"],
+            "integration_needs": ["Authentication", "Storage"],
+            "complexity_level": "standard"
+        }
+
 async def generate_comprehensive_prp(initial_md: str, product_idea: str, model_name: str, app_name: str) -> str:
-    """Generate comprehensive PRP document using prp_base.md template and EXAMPLE_multi_agent_prp.md as reference."""
+    """Generate comprehensive PRP document using universal template system."""
+    
+    # First detect domain context for template customization
+    domain_context = await detect_domain_and_context(product_idea, model_name)
     
     # Read template files
     prp_base_path = Path("Examples/prp_base.md")
@@ -2246,8 +2294,8 @@ async def generate_comprehensive_prp(initial_md: str, product_idea: str, model_n
         with open(example_prp_path, "r", encoding="utf-8") as f:
             example_prp = f.read()
     
-    # Create comprehensive PRP prompt
-    prp_prompt = f"""You are an expert technical project manager creating a comprehensive Project Requirements and Procedures (PRP) document.
+    # Create comprehensive universal PRP prompt
+    prp_prompt = f"""You are an expert technical project manager creating a comprehensive, domain-agnostic Project Requirements and Procedures (PRP) document using a UNIVERSAL TEMPLATE SYSTEM.
 
 PRP BASE TEMPLATE:
 {prp_base}
@@ -2263,7 +2311,25 @@ ORIGINAL PRODUCT IDEA:
 
 APPLICATION NAME: {app_name}
 
-Please create a comprehensive PRP document for "{app_name}" using the prp_base.md template structure and following the patterns shown in EXAMPLE_multi_agent_prp.md.
+DOMAIN CONTEXT (for customization):
+{json.dumps(domain_context, indent=2)}
+
+UNIVERSAL TEMPLATE INSTRUCTIONS:
+Create a comprehensive PRP that serves as both a specific implementation guide AND a reusable template for similar {domain_context['domain']} applications.
+
+USE THESE TEMPLATE VARIABLES throughout the document:
+- {{PROJECT_NAME}} = "{app_name}"
+- {{CORE_ENTITY}} = "{domain_context['core_entity']}" (main business object)
+- {{USER_TYPE}} = "{domain_context['user_type']}" (primary users)
+- {{DOMAIN}} = "{domain_context['domain']}" (industry/field)
+- {{PLATFORM}} = "{domain_context['platform_type']}" (technical platform)
+
+MAKE IT UNIVERSALLY APPLICABLE by including:
+1. **Template Adaptation Guide** - How to customize this PRP for other {domain_context['domain']} applications
+2. **Variable Substitution System** - Clear placeholders for different contexts
+3. **Configurable Feature Modules** - Optional/required features based on complexity
+4. **Industry-Agnostic Language** - Generic terms that apply across similar domains
+5. **Scalable Architecture Options** - From MVP to enterprise-grade
 
 IMPORTANT: Analyze the product idea and include ALL features that should be in this type of application. Think comprehensively about:
 
@@ -2337,27 +2403,57 @@ The PRP should include:
 
 Focus on making this actionable for AI agents to implement. Include specific file structures, code patterns, validation steps, and a comprehensive feature breakdown.
 
-**CRITICAL INSTRUCTIONS:**
-- Research the specific industry/domain thoroughly
-- Include professional-grade features that experts in this field would expect
-- Consider the complete workflow from start to finish
-- Think about both individual users and enterprise/team usage
-- Include features that would differentiate this from basic consumer apps
-- Consider regulatory, compliance, and industry standards
-- Include detailed technical specifications for each feature category
+**UNIVERSAL TEMPLATE FRAMEWORK:**
 
-**DOMAIN EXPERTISE REQUIREMENT:**
-Demonstrate deep understanding of the specific industry by including:
-- Industry-specific terminology and processes
-- Professional workflow patterns
-- Standard file formats and data types
-- Common integrations and tools used in this field
-- Regulatory and compliance requirements
-- Performance benchmarks and quality standards
+Include these CONFIGURABLE FEATURE MODULES:
+```yaml
+Core Modules (Always Required):
+  ✅ user_authentication: User login, profiles, sessions
+  ✅ core_entity_management: CRUD for main business objects
+  ✅ data_persistence: Database, ORM, data validation
+  ✅ api_endpoints: REST API, documentation, versioning
 
-Make sure to include a detailed "Complete Feature Breakdown" section that lists every feature this application should have, organized by the 12 categories specified above. Each category should have 5-15 specific features with brief descriptions.
+Platform Modules (Based on {domain_context['platform_type']}):
+  📱 mobile_features: Offline mode, push notifications, device integration
+  🌐 web_features: Responsive design, browser compatibility, PWA
+  🖥️ desktop_features: Native performance, system integration
 
-Return a comprehensive markdown document following the prp_base.md structure."""
+Business Modules (Based on {domain_context['complexity_level']}):
+  💼 basic_business: User management, basic reporting
+  🏢 standard_business: Analytics, multi-user, workflows
+  🏭 enterprise_business: Multi-tenant, advanced analytics, compliance
+
+Domain-Specific Modules (Based on {domain_context['domain']}):
+  {_get_domain_modules_text(domain_context['domain'])}
+```
+
+**TEMPLATE CUSTOMIZATION SYSTEM:**
+Create sections for:
+1. **Template Variables Guide** - All {{PLACEHOLDER}} variables and their usage
+2. **Feature Module Configuration** - Which modules to enable/disable
+3. **Domain Adaptation Instructions** - How to modify for similar industries
+4. **Scalability Options** - MVP → Standard → Enterprise versions
+5. **Alternative Technology Stacks** - Different backend/frontend options
+
+**INDUSTRY EXPERTISE REQUIREMENTS:**
+- Use {domain_context['domain']}-specific terminology and workflows
+- Include standard integrations for {domain_context['domain']} industry
+- Reference common file formats and data types in {domain_context['domain']}
+- Address regulatory requirements specific to {domain_context['domain']}
+- Include performance benchmarks for {domain_context['domain']} applications
+
+**FINAL DELIVERABLE:**
+Create a comprehensive PRP that scores 9.5/10 on template reusability while maintaining 9/10 on domain expertise.
+
+The document should be:
+- ✅ Domain-specific enough to be immediately actionable
+- ✅ Generic enough to serve as a template for similar projects
+- ✅ Configurable through clearly defined modules and variables
+- ✅ Scalable from MVP to enterprise implementations
+
+Make sure to include a detailed "Complete Feature Breakdown" section with 12 categories, each having 5-15 specific features. Add a "Template Customization Guide" section explaining how to adapt this for other {domain_context['domain']} projects.
+
+Return a comprehensive markdown document following the prp_base.md structure with universal template enhancements."""
 
     timeout = aiohttp.ClientTimeout(total=300, connect=30)
     async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -2371,6 +2467,20 @@ Return a comprehensive markdown document following the prp_base.md structure."""
         )
     
     return result
+
+def _get_domain_modules_text(domain: str) -> str:
+    """Get domain-specific modules based on the detected industry."""
+    domain_modules = {
+        "healthcare": "🏥 patient_management: EHR, appointments, medical records\n  💊 prescription_system: Drug interactions, dosage, pharmacy\n  📊 health_analytics: Vital signs, treatment outcomes",
+        "e-commerce": "🛒 shopping_cart: Cart management, checkout, payment\n  📦 inventory_management: Stock tracking, supplier integration\n  💰 payment_processing: Multiple gateways, refunds, billing",
+        "field-service": "📍 gps_navigation: Route optimization, location tracking\n  📋 task_management: Work orders, scheduling, assignments\n  📊 field_reporting: Data collection, photo capture, signatures",
+        "education": "📚 course_management: Curriculum, lessons, assessments\n  👨‍🎓 student_tracking: Progress monitoring, grades, attendance\n  🎓 certification: Badges, certificates, transcripts",
+        "finance": "💳 transaction_processing: Payments, transfers, reconciliation\n  📈 investment_management: Portfolio tracking, analytics\n  🔒 compliance_reporting: Audit trails, regulatory reports",
+        "real-estate": "🏠 property_management: Listings, valuations, media\n  📅 appointment_scheduling: Showings, inspections\n  💼 client_management: Leads, contacts, communication",
+        "logistics": "🚚 shipment_tracking: Real-time location, delivery status\n  📦 warehouse_management: Inventory, picking, packing\n  📊 route_optimization: Cost analysis, delivery planning"
+    }
+    
+    return domain_modules.get(domain.lower(), "🔧 domain_tools: Industry-specific functionality\n  📊 specialized_reporting: Domain-relevant analytics\n  🔗 industry_integrations: Standard third-party connections")
 
 def save_new_workflow_outputs(initial_md: str, comprehensive_prp: str, app_name: str):
     """Save only initial.md and appname_prp.md files to outputs folder."""
@@ -2435,21 +2545,25 @@ async def generate_new_workflow(product_idea: str, model_name: str = None, progr
     if model_name is None:
         model_name = MODEL_NAME
     
-    # Generate English app name
+    # Step 1: Generate English app name
     if progress_callback:
         progress_callback(10, "🏷️ App Naming Agent creating English name...")
     
     app_name = await generate_app_name_in_english(product_idea, model_name)
     
-    # Step 1: Generate initial.md
+    # Step 2: Generate initial.md
     if progress_callback:
-        progress_callback(30, "📋 Initial Document Agent analyzing requirements...")
+        progress_callback(25, "📋 Initial Document Agent analyzing requirements...")
     
     initial_md = await generate_initial_document(product_idea, model_name)
     
-    # Step 2: Generate comprehensive PRP
+    # Step 3: Detect domain context (integrated into PRP generation)
     if progress_callback:
-        progress_callback(70, "🔬 PRP Analysis Agent creating comprehensive specification...")
+        progress_callback(50, "🔍 Domain Analysis Agent detecting industry context...")
+    
+    # Step 4: Generate comprehensive universal PRP
+    if progress_callback:
+        progress_callback(75, "🔬 Universal PRP Agent creating template-ready specification...")
     
     comprehensive_prp = await generate_comprehensive_prp(initial_md, product_idea, model_name, app_name)
     
@@ -2466,7 +2580,7 @@ if 'app_initialized' not in st.session_state:
 # Sidebar info
 with st.sidebar:
     st.header("ℹ️ PRD Creator")
-    st.write("🤖 **3-Step AI Workflow** for project specifications")
+    st.write("🤖 **Universal Template System** for project specifications")
     
     with st.expander("📋 AI Workflow"):
         st.write("""
@@ -2478,11 +2592,16 @@ with st.sidebar:
         • Analyzes requirements using CLAUDE.md guidelines
         • Creates initial.md specification
         
-        **Step 3:** 🔬 PRP Analysis Agent  
-        • Reviews initial specification
-        • Analyzes ALL features needed for this app type
-        • Generates comprehensive PRP with complete feature set
-        • Uses prp_base.md template structure
+        **Step 3:** 🔍 Domain Analysis Agent
+        • Detects industry/domain context
+        • Identifies core entities and user types
+        • Selects appropriate feature modules
+        
+        **Step 4:** 🔬 Universal PRP Agent  
+        • Creates domain-specific implementation guide
+        • Generates reusable template for similar projects
+        • Includes configurable feature modules
+        • Provides template customization guide
         """)
     
     st.divider()
@@ -2497,10 +2616,10 @@ with st.sidebar:
         remaining = st.session_state.rate_limiter.max_requests - len(st.session_state.rate_limiter.requests)
         st.metric("Remaining Requests", f"{max(0, remaining)}/5")
 
-st.title("🚀 AI Powered Project Specification Creator")
+st.title("🚀 Universal Project Specification Creator")
 st.markdown("""
-### From Product Ideas to Comprehensive PRP Documents  
-Transform your product ideas into structured project specifications using a 3-step AI workflow that creates English app names, initial requirements, and comprehensive Project Requirements & Procedures (PRP) documents.
+### From Product Ideas to Reusable Template Systems  
+Transform your product ideas into comprehensive Project Requirements & Procedures (PRP) documents that serve as both specific implementation guides AND reusable templates for similar projects. Features domain detection, configurable modules, and universal template variables.
 """)
 
 # API connection test in sidebar
@@ -2600,7 +2719,7 @@ with col2:
     
     save_to_disk = st.checkbox("Save outputs to outputs/ folder in project", value=True)
 
-if st.button("🚀 Generate Project Specifications"):
+if st.button("🚀 Generate Universal Template & PRP"):
     # Rate limiting check
     allowed, wait_time = st.session_state.rate_limiter.is_allowed()
     if not allowed:
