@@ -2265,30 +2265,55 @@ APPLICATION NAME: {app_name}
 
 Please create a comprehensive PRP document for "{app_name}" using the prp_base.md template structure and following the patterns shown in EXAMPLE_multi_agent_prp.md.
 
+IMPORTANT: Analyze the product idea and include ALL features that should be in this type of application. Think about:
+- Core features users would expect
+- Essential functionality for this domain
+- Standard features similar applications have
+- Security, authentication, and user management features
+- Admin/management features
+- Integration capabilities
+- Mobile/responsive features
+- Analytics and reporting features
+- Notification systems
+- Data management features
+- User experience enhancements
+
 The PRP should include:
 
 1. **Purpose & Core Principles** - Based on the initial.md analysis
 2. **Goal** - Clear, specific end state for {app_name}  
 3. **Why** - Business value, integration points, problems solved
-4. **What** - User-visible behavior and technical requirements
+4. **What** - User-visible behavior and technical requirements with COMPLETE feature list
 5. **Success Criteria** - Measurable outcomes
 6. **All Needed Context** - Documentation, references, codebase context
 7. **Implementation Blueprint** - Data models, task breakdown, integration points
-8. **Validation Loop** - Testing strategy, quality gates
-9. **Anti-Patterns to Avoid**
+8. **Complete Feature Set** - List ALL features this type of application should have:
+   - Core features mentioned in the idea
+   - Additional essential features for this domain
+   - User management and authentication
+   - Admin features
+   - Reporting and analytics
+   - Integration features
+   - Mobile/responsive features
+   - Security features
+   - Performance optimization features
+9. **Validation Loop** - Testing strategy, quality gates
+10. **Anti-Patterns to Avoid**
 
-Focus on making this actionable for AI agents to implement. Include specific file structures, code patterns, and validation steps.
+Focus on making this actionable for AI agents to implement. Include specific file structures, code patterns, validation steps, and a comprehensive feature breakdown.
+
+Make sure to include a detailed "Complete Feature Breakdown" section that lists every feature this application should have, organized by category (Core Features, User Management, Admin Features, Analytics, etc.).
 
 Return a comprehensive markdown document following the prp_base.md structure."""
 
-    timeout = aiohttp.ClientTimeout(total=180, connect=30)
+    timeout = aiohttp.ClientTimeout(total=240, connect=30)
     async with aiohttp.ClientSession(timeout=timeout) as session:
         result = await call_agent_async(
             session, 
             "PRP Analysis Agent", 
             prp_prompt, 
             require_json=False, 
-            timeout=120, 
+            timeout=180, 
             model_name=model_name
         )
     
@@ -2402,7 +2427,8 @@ with st.sidebar:
         
         **Step 3:** 🔬 PRP Analysis Agent  
         • Reviews initial specification
-        • Generates comprehensive PRP document
+        • Analyzes ALL features needed for this app type
+        • Generates comprehensive PRP with complete feature set
         • Uses prp_base.md template structure
         """)
     
