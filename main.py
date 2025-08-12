@@ -2265,18 +2265,49 @@ APPLICATION NAME: {app_name}
 
 Please create a comprehensive PRP document for "{app_name}" using the prp_base.md template structure and following the patterns shown in EXAMPLE_multi_agent_prp.md.
 
-IMPORTANT: Analyze the product idea and include ALL features that should be in this type of application. Think about:
-- Core features users would expect
-- Essential functionality for this domain
-- Standard features similar applications have
-- Security, authentication, and user management features
-- Admin/management features
-- Integration capabilities
-- Mobile/responsive features
-- Analytics and reporting features
-- Notification systems
-- Data management features
-- User experience enhancements
+IMPORTANT: Analyze the product idea and include ALL features that should be in this type of application. Think comprehensively about:
+
+**Core & Domain-Specific Features:**
+- Primary features mentioned by user
+- Essential professional tools for this industry/domain
+- Advanced features that distinguish this from basic apps
+- Workflow-specific tools and processes
+- Industry-standard functionalities
+
+**Technical Infrastructure:**
+- Data models and relationships
+- API endpoints and integrations
+- Performance and scalability considerations
+- Security and compliance requirements
+- Offline/sync capabilities
+
+**User Experience:**
+- User authentication and profiles
+- Role-based permissions and access control
+- Dashboard and navigation design
+- Mobile responsiveness and cross-platform support
+- Accessibility features
+
+**Business & Management:**
+- Admin panels and user management
+- Analytics, reporting, and business intelligence
+- Billing, subscriptions, or monetization features
+- Multi-tenancy and organization management
+- Compliance and audit trails
+
+**Integration & Ecosystem:**
+- Third-party service integrations specific to this domain
+- Import/export capabilities
+- API connectivity for professional tools
+- Hardware integrations (if applicable)
+- Cloud services and data synchronization
+
+**Advanced Features:**
+- AI/ML capabilities relevant to domain
+- Automation and workflow optimization
+- Advanced search and filtering
+- Collaboration and real-time features
+- Notification and communication systems
 
 The PRP should include:
 
@@ -2287,33 +2318,55 @@ The PRP should include:
 5. **Success Criteria** - Measurable outcomes
 6. **All Needed Context** - Documentation, references, codebase context
 7. **Implementation Blueprint** - Data models, task breakdown, integration points
-8. **Complete Feature Set** - List ALL features this type of application should have:
-   - Core features mentioned in the idea
-   - Additional essential features for this domain
-   - User management and authentication
-   - Admin features
-   - Reporting and analytics
-   - Integration features
-   - Mobile/responsive features
-   - Security features
-   - Performance optimization features
+8. **Complete Feature Set** - Provide exhaustive feature breakdown organized by categories:
+   
+   **Core Features:** Primary functionality from user idea
+   **Professional Tools:** Industry-specific advanced features
+   **User Management:** Authentication, profiles, permissions, roles
+   **Admin & Management:** User admin, system config, monitoring
+   **Analytics & BI:** Detailed reporting, dashboards, insights, metrics
+   **Integration Hub:** All relevant third-party integrations for this domain
+   **Mobile & Cross-Platform:** Native mobile features, responsive design
+   **Security & Compliance:** Data protection, audit trails, certifications
+   **AI & Automation:** Machine learning features, workflow automation
+   **Collaboration:** Team features, real-time editing, communication
+   **Data Management:** Import/export, formats, storage, backup
+   **Performance:** Optimization, caching, scalability features
 9. **Validation Loop** - Testing strategy, quality gates
 10. **Anti-Patterns to Avoid**
 
 Focus on making this actionable for AI agents to implement. Include specific file structures, code patterns, validation steps, and a comprehensive feature breakdown.
 
-Make sure to include a detailed "Complete Feature Breakdown" section that lists every feature this application should have, organized by category (Core Features, User Management, Admin Features, Analytics, etc.).
+**CRITICAL INSTRUCTIONS:**
+- Research the specific industry/domain thoroughly
+- Include professional-grade features that experts in this field would expect
+- Consider the complete workflow from start to finish
+- Think about both individual users and enterprise/team usage
+- Include features that would differentiate this from basic consumer apps
+- Consider regulatory, compliance, and industry standards
+- Include detailed technical specifications for each feature category
+
+**DOMAIN EXPERTISE REQUIREMENT:**
+Demonstrate deep understanding of the specific industry by including:
+- Industry-specific terminology and processes
+- Professional workflow patterns
+- Standard file formats and data types
+- Common integrations and tools used in this field
+- Regulatory and compliance requirements
+- Performance benchmarks and quality standards
+
+Make sure to include a detailed "Complete Feature Breakdown" section that lists every feature this application should have, organized by the 12 categories specified above. Each category should have 5-15 specific features with brief descriptions.
 
 Return a comprehensive markdown document following the prp_base.md structure."""
 
-    timeout = aiohttp.ClientTimeout(total=240, connect=30)
+    timeout = aiohttp.ClientTimeout(total=300, connect=30)
     async with aiohttp.ClientSession(timeout=timeout) as session:
         result = await call_agent_async(
             session, 
             "PRP Analysis Agent", 
             prp_prompt, 
             require_json=False, 
-            timeout=180, 
+            timeout=240, 
             model_name=model_name
         )
     
