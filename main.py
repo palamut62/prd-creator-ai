@@ -2315,28 +2315,63 @@ def save_new_workflow_outputs(initial_md: str, comprehensive_prp: str, app_name:
         "comprehensive_prp": str(prp_path)
     }
 
+async def generate_app_name_in_english(product_idea: str, model_name: str) -> str:
+    """Generate English app name from Turkish or any language product idea."""
+    
+    prompt = f"""You are a product naming expert. Based on the following product idea, create a concise English application name (2-4 words maximum).
+
+Product Idea: {product_idea}
+
+Requirements:
+- Must be in English regardless of input language
+- Should be descriptive and professional
+- Use only letters, numbers, spaces, and hyphens
+- Maximum 4 words
+- Should capture the essence of the product
+
+Return only the application name, nothing else."""
+
+    timeout = aiohttp.ClientTimeout(total=60, connect=30)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        result = await call_agent_async(
+            session, 
+            "App Naming Agent", 
+            prompt, 
+            require_json=False, 
+            timeout=30, 
+            model_name=model_name
+        )
+    
+    # Clean the result
+    app_name = result.strip().strip('"').strip("'")
+    app_name = re.sub(r'[^\w\s-]', '', app_name).strip()
+    if len(app_name) > 50:
+        app_name = app_name[:50].strip()
+    if not app_name:
+        app_name = "Product"
+    
+    return app_name
+
 async def generate_new_workflow(product_idea: str, model_name: str = None, progress_callback=None):
     """New 2-step workflow: Generate initial.md then comprehensive PRP document."""
     if model_name is None:
         model_name = MODEL_NAME
     
-    # Extract app name from product idea
-    app_name = product_idea.split('.')[0].split(',')[0].strip()
-    if len(app_name) > 50:
-        app_name = app_name[:50] + "..."
-    app_name = re.sub(r'[^\w\s-]', '', app_name).strip()
-    if not app_name:
-        app_name = "Product"
+    # Generate English app name
+    if progress_callback:
+        progress_callback(10, "🏷️ App Naming Agent creating English name...")
+    
+    app_name = await generate_app_name_in_english(product_idea, model_name)
     
     # Step 1: Generate initial.md
     if progress_callback:
-        progress_callback(20, "📋 Initial Document Agent analyzing requirements...")
+        progress_callback(30, "📋 Initial Document Agent analyzing requirements...")
     
     initial_md = await generate_initial_document(product_idea, model_name)
     
     # Step 2: Generate comprehensive PRP
     if progress_callback:
-        progress_callback(60, "🔬 PRP Analysis Agent creating comprehensive specification...")
+        progress_callback(70, "🔬 PRP Analysis Agent creating comprehensive specification...")
     
     comprehensive_prp = await generate_comprehensive_prp(initial_md, product_idea, model_name, app_name)
     
@@ -2353,15 +2388,19 @@ if 'app_initialized' not in st.session_state:
 # Sidebar info
 with st.sidebar:
     st.header("ℹ️ PRD Creator")
-    st.write("🤖 **2-Step AI Workflow** for project specifications")
+    st.write("🤖 **3-Step AI Workflow** for project specifications")
     
     with st.expander("📋 AI Workflow"):
         st.write("""
-        **Step 1:** 📋 Initial Document Agent
+        **Step 1:** 🏷️ App Naming Agent
+        • Creates English application name
+        • Works with any input language
+        
+        **Step 2:** 📋 Initial Document Agent
         • Analyzes requirements using CLAUDE.md guidelines
         • Creates initial.md specification
         
-        **Step 2:** 🔬 PRP Analysis Agent  
+        **Step 3:** 🔬 PRP Analysis Agent  
         • Reviews initial specification
         • Generates comprehensive PRP document
         • Uses prp_base.md template structure
@@ -2382,7 +2421,7 @@ with st.sidebar:
 st.title("🚀 AI Powered Project Specification Creator")
 st.markdown("""
 ### From Product Ideas to Comprehensive PRP Documents  
-Transform your product ideas into structured project specifications using a 2-step AI workflow that creates initial requirements and comprehensive Project Requirements & Procedures (PRP) documents.
+Transform your product ideas into structured project specifications using a 3-step AI workflow that creates English app names, initial requirements, and comprehensive Project Requirements & Procedures (PRP) documents.
 """)
 
 # API connection test in sidebar
