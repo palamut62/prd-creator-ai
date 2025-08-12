@@ -17,15 +17,15 @@ Enterprise-grade product requirements document generator powered by 10 specializ
 - **🚀 DevOps Engineer** - CI/CD pipelines & infrastructure automation
 - **🗂️ Project Manager** - IDE-compatible Kanban tasks
 
-### 🔒 Güvenlik ve Performans
-- ✅ API anahtarı doğrulama
-- ✅ Input validation ve sanitization
-- ✅ Rate limiting koruması
-- ✅ HTTP timeout ayarları
-- ✅ Kapsamlı hata yönetimi
+### 🔒 Security and Performance
+- ✅ API key validation
+- ✅ Input validation and sanitization
+- ✅ Rate limiting protection
+- ✅ HTTP timeout settings
+- ✅ Comprehensive error handling
 - ✅ Progress tracking
 
-### 📤 Çıktı Formatları
+### 📤 Output Formats
 - **Comprehensive Markdown** - Complete product documentation
 - **10 Specialized JSON Files** - Structured data for each domain
   - `branding.json` - Brand identity & design systems
@@ -40,48 +40,48 @@ Enterprise-grade product requirements document generator powered by 10 specializ
   - `devops_pipeline.json` - CI/CD & infrastructure automation
 - **IDE Tasks** - Development-ready Kanban board
 
-## 🚀 Kurulum
+## 🚀 Installation
 
-### 1. Depoyu Klonlayın
+### 1. Clone the Repository
 ```bash
-git clone <repo-url>
-cd Prd_creator
+git clone https://github.com/palamut62/prd-creator-ai.git
+cd prd-creator-ai
 ```
 
-### 2. Bağımlılıkları Yükleyin
+### 2. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Ortam Değişkenlerini Ayarlayın
+### 3. Setup Environment Variables
 ```bash
 cp .env.example .env
 ```
 
-`.env` dosyasını düzenleyip API anahtarınızı ekleyin:
+Edit the `.env` file and add your API key:
 ```env
 OPENROUTER_API_KEY=your_openrouter_api_key_here
 ```
 
-### 4. Uygulamayı Çalıştırın
+### 4. Run the Application
 ```bash
 streamlit run main.py
 ```
 
-## 🔧 Konfigürasyon
+## 🔧 Configuration
 
-### Çevre Değişkenleri
+### Environment Variables
 
-| Değişken | Varsayılan | Açıklama |
-|----------|-----------|----------|
-| `OPENROUTER_API_KEY` | - | OpenRouter API anahtarı (gerekli) |
-| `MODEL_NAME` | `openai/gpt-5` | Kullanılacak AI modeli |
-| `MAX_REQUESTS_PER_WINDOW` | `5` | Rate limit: maksimum istek sayısı |
-| `RATE_LIMIT_WINDOW_SECONDS` | `300` | Rate limit: zaman penceresi (saniye) |
-| `DEFAULT_TIMEOUT_SECONDS` | `60` | API isteği timeout süresi |
-| `OUTPUT_DIR` | `outputs` | Çıktı dosyalarının kaydedileceği dizin |
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPENROUTER_API_KEY` | - | OpenRouter API key (required) |
+| `MODEL_NAME` | `openai/gpt-5` | AI model to use |
+| `MAX_REQUESTS_PER_WINDOW` | `5` | Rate limit: maximum request count |
+| `RATE_LIMIT_WINDOW_SECONDS` | `300` | Rate limit: time window (seconds) |
+| `DEFAULT_TIMEOUT_SECONDS` | `60` | API request timeout duration |
+| `OUTPUT_DIR` | `outputs` | Directory to save output files |
 
-### Desteklenen Modeller
+### Supported Models
 **🆓 Free Models:**
 - `openai/gpt-oss-20b:free` - GPT-OSS 20B
 - `z-ai/glm-4.5-air:free` - GLM 4.5 Air  
@@ -96,18 +96,18 @@ streamlit run main.py
 - `openai/gpt-5` - GPT-5 ($25/1M)
 - `anthropic/claude-3-opus` - Claude 3 Opus ($15/1M)
 
-## 📋 Kullanım
+## 📋 Usage
 
-1. **Ürün Fikrini Girin**: Ana sayfada ürün fikrinizi detaylı açıklayın
-2. **Dokümanları Oluşturun**: "Doküman Oluştur" butonuna tıklayın
-3. **Sonuçları İndirin**: Oluşturulan dokümanları indirin veya dosya olarak kaydedin
+1. **Enter Product Idea**: Describe your product idea in detail on the main page
+2. **Generate Documents**: Click the "Generate Documents and IDE Tasks" button
+3. **Download Results**: Download the generated documents or save them as files
 
-### İpuçları
-- Ne kadar detaylı açıklarsanız o kadar iyi dokümanlar üretilir
-- Minimum 10 karakter, maksimum 5000 karakter sınırı vardır
-- Rate limiting nedeniyle 5 dakikada maksimum 5 istek gönderebilirsiniz
+### Tips
+- The more detailed you are, the better documents will be generated
+- Minimum 10 characters, maximum 5000 character limit
+- Rate limiting allows maximum 5 requests per 5 minutes
 
-## 🏗️ Proje Yapısı
+## 🏗️ Project Structure
 
 ```
 PRD-Creator-AI/
@@ -131,44 +131,44 @@ PRD-Creator-AI/
     └── dev_tasks_[timestamp].md       # IDE Kanban tasks
 ```
 
-## 🔍 API Test Etme
+## 🔍 API Testing
 
-Uygulamada API bağlantısını test edebilirsiniz:
-1. Sol panelden "API Bağlantısı Test Et" butonuna tıklayın
-2. Bağlantı durumunu kontrol edin
+You can test the API connection in the application:
+1. Click the "Test API Connection" button from the sidebar
+2. Check the connection status
 
-## ⚠️ Sorun Giderme
+## ⚠️ Troubleshooting
 
-### Yaygın Hatalar
+### Common Errors
 
-**API Anahtarı Hatası**
-- `.env` dosyasında `OPENROUTER_API_KEY` değerinin doğru olduğundan emin olun
-- API anahtarının geçerli formatta olduğunu kontrol edin
+**API Key Error**
+- Ensure the `OPENROUTER_API_KEY` value in the `.env` file is correct
+- Check that the API key is in valid format
 
-**Rate Limit Hatası**  
-- 5 dakika bekleyip tekrar deneyin
-- İstek sayınızı kontrol edin (sol panelde gösterilir)
+**Rate Limit Error**  
+- Wait 5 minutes and try again
+- Check your request count (shown in the sidebar)
 
-**Timeout Hatası**
-- İnternet bağlantınızı kontrol edin
-- Daha kısa ürün fikri tanımı yapmayı deneyin
-- `DEFAULT_TIMEOUT_SECONDS` değerini artırın
+**Timeout Error**
+- Check your internet connection
+- Try a shorter product idea description
+- Increase the `DEFAULT_TIMEOUT_SECONDS` value
 
-## 🤝 Katkıda Bulunma
+## 🤝 Contributing
 
-1. Projeyi fork edin
-2. Feature branch oluşturun (`git checkout -b feature/yeni-ozellik`)
-3. Değişikliklerinizi commit edin (`git commit -m 'Yeni özellik ekle'`)
-4. Branch'i push edin (`git push origin feature/yeni-ozellik`)
-5. Pull Request oluşturun
+1. Fork the project
+2. Create a feature branch (`git checkout -b feature/new-feature`)
+3. Commit your changes (`git commit -m 'Add new feature'`)
+4. Push the branch (`git push origin feature/new-feature`)
+5. Create a Pull Request
 
-## 📄 Lisans
+## 📄 License
 
-Bu proje MIT lisansı altında lisanslanmıştır.
+This project is licensed under the MIT License.
 
-## 🆘 Destek
+## 🆘 Support
 
-Sorunlarınız için:
-1. Önce bu README'yi kontrol edin
-2. GitHub Issues'da arama yapın
-3. Yeni bir issue oluşturun
+For issues:
+1. First check this README
+2. Search in GitHub Issues
+3. Create a new issue

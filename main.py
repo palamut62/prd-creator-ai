@@ -292,125 +292,125 @@ def sanitize_input(text: str, max_length: int = 10000) -> str:
     return text
 
 def validate_product_idea(text: str) -> tuple[bool, str]:
-    """Ürün fikri girdisini doğrula"""
+    """Validate product idea input"""
     if not text or not text.strip():
-        return False, "Ürün fikri boş olamaz"
+        return False, "Product idea cannot be empty"
     
     text = text.strip()
     
-    # Minimum uzunluk kontrolü
+    # Minimum length check
     if len(text) < 10:
-        return False, "Ürün fikri en az 10 karakter olmalıdır"
+        return False, "Product idea must be at least 10 characters"
     
-    # Maksimum uzunluk kontrolü
+    # Maximum length check
     if len(text) > 5000:
-        return False, "Ürün fikri 5000 karakterden uzun olamaz"
+        return False, "Product idea cannot be longer than 5000 characters"
     
-    # Sadece boşluk ve noktalama işareti kontrolü
+    # Only space and punctuation check
     if not re.search(r'[a-zA-ZıİşŞğĞüÜöÖçÇ]', text):
-        return False, "Ürün fikri anlamlı metin içermelidir"
+        return False, "Product idea must contain meaningful text"
     
-    # Tekrarlayan karakter kontrolü
+    # Repeating character check
     if re.search(r'(.)\1{20,}', text):
-        return False, "Geçersiz tekrarlayan karakter dizisi"
+        return False, "Invalid repeating character sequence"
     
     return True, ""
 
 def validate_document_quality(docs: ProductDocs) -> dict:
-    """Doküman kalitesini değerlendir ve puanlama yap"""
+    """Evaluate document quality and scoring"""
     issues = []
     score = 100
     
     # Branding validation
     if len(docs.branding.brand_name) < 3:
-        issues.append("Marka adı çok kısa")
+        issues.append("Brand name too short")
         score -= 10
     
     if len(docs.branding.tagline) > 50:
-        issues.append("Slogan çok uzun (50 karakter max önerilir)")
+        issues.append("Tagline too long (50 characters max recommended)")
         score -= 5
         
     if len(docs.branding.core_values) < 3:
-        issues.append("En az 3 temel değer önerilir")
+        issues.append("At least 3 core values recommended")
         score -= 10
     
     # Technical validation
     if not docs.technical.core_components:
-        issues.append("Temel sistem bileşenleri eksik")
+        issues.append("Core system components missing")
         score -= 15
     
     # Feature validation  
     if not docs.features.features:
-        issues.append("Hiç özellik tanımlanmamış")
+        issues.append("No features defined")
         score -= 20
     elif hasattr(docs.features.features[0], 'priority'):
         p0_count = len([f for f in docs.features.features if f.priority == 'P0'])
         if p0_count == 0:
-            issues.append("En az 1 P0 (kritik) özellik gerekli")
+            issues.append("At least 1 P0 (critical) feature required")
             score -= 15
         elif p0_count > 8:
-            issues.append("Çok fazla P0 özellik - MVP scope'u daraltılmalı")
+            issues.append("Too many P0 features - MVP scope should be narrowed")
             score -= 10
     
     # PRD validation
     if len(docs.prd.objective) < 50:
-        issues.append("Proje hedefi daha detaylandırılmalı")
+        issues.append("Project objective should be more detailed")
         score -= 10
         
     if not hasattr(docs.prd, 'problem_statement') or len(docs.prd.problem_statement) < 30:
-        issues.append("Problem tanımı yetersiz")
+        issues.append("Problem definition insufficient")
         score -= 15
     
     # Business case validation
     if hasattr(docs.business_case, 'market_opportunity') and len(docs.business_case.market_opportunity) < 100:
-        issues.append("Pazar fırsatı analizi yüzeysel")
+        issues.append("Market opportunity analysis superficial")
         score -= 10
     
     # Timeline validation
     if len(docs.timeline.milestones) < 3:
-        issues.append("En az 3 major milestone tanımlanmalı")
+        issues.append("At least 3 major milestones should be defined")
         score -= 10
     
     # UI/UX Design validation
     if not docs.uiux_design.user_flow_diagrams:
-        issues.append("Kullanıcı akış diagramları eksik")
+        issues.append("User flow diagrams missing")
         score -= 15
     elif len(docs.uiux_design.user_flow_diagrams) < 2:
-        issues.append("En az 2 temel kullanıcı akışı tanımlanmalı")
+        issues.append("At least 2 basic user flows should be defined")
         score -= 10
     
     if not docs.uiux_design.wireframe_specifications:
-        issues.append("Wireframe spesifikasyonları eksik")
+        issues.append("Wireframe specifications missing")
         score -= 15
     elif len(docs.uiux_design.wireframe_specifications) < 3:
-        issues.append("Ana ekranlar için wireframe'ler eksik")
+        issues.append("Wireframes for main screens missing")
         score -= 10
     
     if not docs.uiux_design.component_library:
-        issues.append("Temel UI bileşen kütüphanesi eksik")
+        issues.append("Basic UI component library missing")
         score -= 10
     
     # Test Plan validation
     if not docs.test_plan.test_environments:
-        issues.append("Test ortamları tanımlanmamış")
+        issues.append("Test environments not defined")
         score -= 10
     
     if not docs.test_plan.quality_gates:
-        issues.append("Kalite kontrol noktaları eksik")
+        issues.append("Quality control checkpoints missing")
         score -= 10
     
     # Data Architecture validation
     if not docs.data_architecture.database_schemas:
-        issues.append("Veritabanı şemaları tanımlanmamış")
+        issues.append("Database schemas not defined")
         score -= 15
     
     if not docs.data_architecture.api_endpoints:
-        issues.append("API endpoint'leri eksik")
+        issues.append("API endpoints missing")
         score -= 10
     
     # DevOps Pipeline validation
     if not docs.devops_pipeline.ci_cd_stages:
-        issues.append("CI/CD pipeline aşamaları eksik")
+        issues.append("CI/CD pipeline stages missing")
         score -= 15
     
     return {
@@ -2091,17 +2091,17 @@ async def generate_all(product_idea: str, model_name: str = None, progress_callb
     async with aiohttp.ClientSession(timeout=timeout) as session:
         results = []
         
-        # Her ajanı sırayla çalıştır ve progress güncellee
+        # Run each agent sequentially and update progress
         for i, (role, prompt, _) in enumerate(prompts):
             if progress_callback:
-                progress = 20 + (i * 50 // len(prompts))  # 20-70 arası progress
-                progress_callback(progress, f"🤖 {agent_names[i]} çalışıyor...")
+                progress = 20 + (i * 50 // len(prompts))  # 20-70 progress range
+                progress_callback(progress, f"🤖 {agent_names[i]} working...")
             
             result = await call_agent_async(session, role, prompt, require_json=True, timeout=120, model_name=model_name)
             results.append(result)
 
     if progress_callback:
-        progress_callback(70, "🔄 AI yanıtları işleniyor...")
+        progress_callback(70, "🔄 Processing AI responses...")
     
     branding = _to_model(prompts[0][2], results[0])
     technical = _to_model(prompts[1][2], results[1])
@@ -2128,23 +2128,23 @@ async def generate_all(product_idea: str, model_name: str = None, progress_callb
     )
 
     if progress_callback:
-        progress_callback(80, "📝 Dokümanlar oluşturuluyor...")
+        progress_callback(80, "📝 Generating documents...")
     
     md_content = docs_to_markdown(docs)
     
     if progress_callback:
-        progress_callback(90, "🗂️ IDE görevleri hazırlanıyor...")
+        progress_callback(90, "🗂️ Preparing IDE tasks...")
     
     ide_tasks_md = await generate_ide_kanban(md_content)
 
-    # Ek olarak, docs'tan hiyerarşik görev planı üret
+    # Additionally, generate hierarchical task plan from docs
     try:
         tasks_plan = await generate_structured_tasks_from_docs(docs)
     except Exception:
         tasks_plan = None
 
     if progress_callback:
-        progress_callback(100, "✅ Tamamlandı!")
+        progress_callback(100, "✅ Completed!")
     
     return docs, md_content, ide_tasks_md, tasks_plan
 
@@ -2153,7 +2153,7 @@ async def generate_all(product_idea: str, model_name: str = None, progress_callb
 # ==========================
 
 st.set_page_config(
-    page_title="PRD Creator - AI Ürün Doküman Üretici", 
+    page_title="PRD Creator - AI Product Documentation Generator", 
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -2162,9 +2162,9 @@ st.set_page_config(
 # Sidebar info
 with st.sidebar:
     st.header("ℹ️ PRD Creator")
-    st.write("🤖 **10 Uzman AI Ajanı** ile kapsamlı ürün dokümanları oluşturur")
+    st.write("🤖 **10 Expert AI Agents** for comprehensive product documentation")
     
-    with st.expander("📋 AI Ajanları"):
+    with st.expander("📋 AI Agents"):
         st.write("""
         • 🎨 Brand • 🏗️ Tech • 📋 PM • 📑 Product  
         • 📅 Timeline • 💼 Business • 🎨 UI/UX
@@ -2172,28 +2172,28 @@ with st.sidebar:
         """)
     
     st.divider()
-    st.subheader("🤖 Modeller")
+    st.subheader("🤖 Models")
     st.write("""
-    **🆓 Ücretsiz:** GPT-OSS, GLM 4.5, Qwen3  
-    **⚡ Performans:** GPT-4o, Claude 3.5 Sonnet
+    **🆓 Free:** GPT-OSS, GLM 4.5, Qwen3  
+    **⚡ Performance:** GPT-4o, Claude 3.5 Sonnet
     **🚀 Premium:** GPT-5, Claude Opus
     """)
     
     if 'rate_limiter' in st.session_state:
         remaining = st.session_state.rate_limiter.max_requests - len(st.session_state.rate_limiter.requests)
-        st.metric("Kalan İstek Hakkı", f"{max(0, remaining)}/5")
+        st.metric("Remaining Requests", f"{max(0, remaining)}/5")
 
 st.title("🚀 AI Powered PRD Creator")
 st.markdown("""
-### Ürün fikrinizden profesyonel dokümanlara
-4 uzman AI ajanı ile branding, teknik özellikler, detaylı özellik listesi ve PRD dokümanı oluşturun.
+### From Product Ideas to Professional Documentation
+Create branding, technical specifications, detailed feature lists, and PRD documents with 10 expert AI agents.
 """)
 
 # API connection test in sidebar
 with st.sidebar:
     st.divider()
-    if st.button("🔍 API Bağlantısı Test Et"):
-        with st.spinner("Test ediliyor..."):
+    if st.button("🔍 Test API Connection"):
+        with st.spinner("Testing..."):
             try:
                 is_connected, message = asyncio.run(test_api_connection(OPENROUTER_API_KEY))
                 if is_connected:
@@ -2201,60 +2201,60 @@ with st.sidebar:
                 else:
                     st.error(f"❌ {message}")
             except Exception as e:
-                st.error(f"❌ Test hatası: {e}")
+                st.error(f"❌ Test error: {e}")
 
 product_idea = st.text_area(
-    "💡 Ürün fikrini detaylı olarak açıklayın", 
-    placeholder="Örn: Evcil hayvanlar için yapay zeka destekli sağlık takip uygulaması. Veteriner kontrollerini takip eder, aşı takvimi oluşturur ve sağlık verilerini analiz ederek sahipleri uyarır.",
+    "💡 Describe your product idea in detail", 
+    placeholder="Example: AI-powered health tracking app for pets. Tracks veterinary checkups, creates vaccination schedules, and analyzes health data to alert owners.",
     height=120,
-    help="Ne kadar detaylı açıklarsanız o kadar iyi dokümanlar üretilir. Minimum 10 karakter gereklidir."
+    help="The more detailed you are, the better documents will be generated. Minimum 10 characters required."
 )
 
-# Character count ve preview
+# Character count and preview
 if product_idea:
     char_count = len(product_idea)
     if char_count < 10:
-        st.warning(f"⚠️ Çok kısa ({char_count}/10 minimum karakter)")
+        st.warning(f"⚠️ Too short ({char_count}/10 minimum characters)")
     elif char_count > 5000:
-        st.error(f"❌ Çok uzun ({char_count}/5000 maksimum karakter)")
+        st.error(f"❌ Too long ({char_count}/5000 maximum characters)")
     else:
-        st.info(f"✅ Uygun uzunluk ({char_count} karakter)")
+        st.info(f"✅ Appropriate length ({char_count} characters)")
     
     if char_count >= 10:
-        with st.expander("🔍 Girdi Önizlemesi"):
+        with st.expander("🔍 Input Preview"):
             sanitized_preview = sanitize_input(product_idea, max_length=200)
-            st.write(f"**Temizlenmiş girdi:** {sanitized_preview}")
+            st.write(f"**Sanitized input:** {sanitized_preview}")
 
 col1, col2 = st.columns([1, 1])
 with col1:
-    if st.button("📝 Profesyonel Prompt Metnini Kaydet"):
+    if st.button("📝 Save Professional Prompt Text"):
         try:
             saved_path = save_professional_prompt_to_file()
-            st.success(f"Profesyonel prompt kaydedildi: {saved_path}")
+            st.success(f"Professional prompt saved: {saved_path}")
         except Exception as e:
-            st.error(f"Prompt kaydedilemedi: {e}")
+            st.error(f"Could not save prompt: {e}")
 
 with col2:
-    # Simplified model selection - daha güvenli
-    st.write("**🤖 AI Model Seçimi**")
+    # Simplified model selection - more secure
+    st.write("**🤖 AI Model Selection**")
     
-    # Flat model list - kategoriler olmadan
+    # Flat model list - without categories
     all_models = [
         # Free models
-        ("openai/gpt-oss-20b:free", "🆓 GPT-OSS 20B (Ücretsiz)"),
-        ("z-ai/glm-4.5-air:free", "🆓 GLM 4.5 Air (Ücretsiz)"), 
-        ("qwen/qwen3-coder:free", "🆓 Qwen3 Coder (Ücretsiz)"),
+        ("openai/gpt-oss-20b:free", "🆓 GPT-OSS 20B (Free)"),
+        ("z-ai/glm-4.5-air:free", "🆓 GLM 4.5 Air (Free)"), 
+        ("qwen/qwen3-coder:free", "🆓 Qwen3 Coder (Free)"),
         # Economic models
         ("openai/gpt-3.5-turbo", "⚡ GPT-3.5 Turbo ($0.50/1M)"),
         ("anthropic/claude-3-haiku", "⚡ Claude 3 Haiku ($0.25/1M)"),
         ("google/gemini-flash-1.5", "⚡ Gemini 1.5 Flash ($0.075/1M)"),
         # Performance models
-        ("openai/gpt-4o", "🏆 GPT-4o ($2.50/1M) - Önerilen"),
+        ("openai/gpt-4o", "🏆 GPT-4o ($2.50/1M) - Recommended"),
         ("anthropic/claude-3.5-sonnet", "🏆 Claude 3.5 Sonnet ($3.00/1M)"),
         ("google/gemini-2.5-pro", "🏆 Gemini 2.5 Pro ($3.50/1M)"),
         ("qwen/qwen3-30b-a3b-instruct-2507", "🏆 Qwen3 30B ($1.50/1M)"),
         # Premium models
-        ("openai/gpt-5", "🚀 GPT-5 ($25.00/1M) - En Gelişmiş"),
+        ("openai/gpt-5", "🚀 GPT-5 ($25.00/1M) - Most Advanced"),
         ("anthropic/claude-3-opus", "🚀 Claude 3 Opus ($15.00/1M)"),
     ]
     
@@ -2262,11 +2262,11 @@ with col2:
     default_index = 6  # GPT-4o position in list
     
     model_choice = st.selectbox(
-        "Model Seçin",
+        "Select Model",
         all_models,
         format_func=lambda x: x[1],  # Display name
         index=default_index,
-        help="🆓=Ücretsiz, ⚡=Ekonomik, 🏆=Performans, 🚀=Premium"
+        help="🆓=Free, ⚡=Economic, 🏆=Performance, 🚀=Premium"
     )
     
     selected_model = model_choice[0]  # Get model ID
@@ -2275,23 +2275,23 @@ with col2:
     try:
         model_info = get_model_info(selected_model)
         if model_info and model_info.get("is_free"):
-            st.success(f"✅ Tamamen Ücretsiz!")
+            st.success(f"✅ Completely Free!")
         elif model_info and model_info.get("price"):
-            st.info(f"💰 Maliyet: {model_info['price']}")
+            st.info(f"💰 Cost: {model_info['price']}")
         
         if model_info and model_info.get("context_length"):
             st.caption(f"📝 Context: {model_info['context_length']} tokens")
     except Exception:
         st.caption(f"Model: {selected_model}")
     
-    save_to_disk = st.checkbox("Çıktıları proje içinde outputs/ klasörüne kaydet")
+    save_to_disk = st.checkbox("Save outputs to outputs/ folder in project")
 
-if st.button("🚀 Doküman ve IDE Görevlerini Oluştur"):
-    # Rate limiting kontrolü
+if st.button("🚀 Generate Documents and IDE Tasks"):
+    # Rate limiting check
     allowed, wait_time = st.session_state.rate_limiter.is_allowed()
     if not allowed:
-        st.error(f"⏱️ Çok fazla istek! {wait_time} saniye sonra tekrar deneyin.")
-        st.info("Bu koruma API maliyetlerini optimize etmek içindir.")
+        st.error(f"⏱️ Too many requests! Try again in {wait_time} seconds.")
+        st.info("This protection is to optimize API costs.")
     else:
         # Input validation
         is_valid, error_message = validate_product_idea(product_idea)
@@ -2312,7 +2312,7 @@ if st.button("🚀 Doküman ve IDE Görevlerini Oluştur"):
                     status_text.text(status_message)
                 
                 # Initial progress
-                update_progress(10, "🚀 İşlem başlatılıyor...")
+                update_progress(10, "🚀 Initializing process...")
                 
                 docs, product_md, ide_tasks_md, tasks_plan = asyncio.run(
                     generate_all(sanitized_idea, selected_model, progress_callback=update_progress)
@@ -2321,46 +2321,46 @@ if st.button("🚀 Doküman ve IDE Görevlerini Oluştur"):
                 # Document validation
                 validation_results = validate_document_quality(docs)
                 
-                status_text.text("✅ Enterprise-grade dokümanlar başarıyla oluşturuldu!")
+                status_text.text("✅ Enterprise-grade documents successfully generated!")
                 progress_bar.progress(100)
                 
-                # Progress bar ve status temizle
+                # Clear progress bar and status
                 import time
-                time.sleep(1)  # Kısa gösterim için
+                time.sleep(1)  # Brief display
                 progress_bar.empty()
                 status_text.empty()
                 
                 # Show validation results
                 if validation_results["issues"]:
-                    with st.expander("⚠️ Kalite Kontrolü Notları"):
-                        st.write("**Kalite Puanı:**", f"{validation_results['score']}/100")
-                        st.write("**Tespit Edilen Konular:**")
+                    with st.expander("⚠️ Quality Control Notes"):
+                        st.write("**Quality Score:**", f"{validation_results['score']}/100")
+                        st.write("**Identified Issues:**")
                         for issue in validation_results["issues"]:
                             st.write(f"- {issue}")
                 else:
-                    st.success(f"🏆 Mükemmel kalite puanı: {validation_results['score']}/100")
+                    st.success(f"🏆 Perfect quality score: {validation_results['score']}/100")
 
-                st.subheader("📄 Ürün Dokümanları")
+                st.subheader("📄 Product Documentation")
                 st.markdown(product_md)
-                st.download_button("📥 Ürün Dokümanlarını İndir", product_md, "product_docs.md", "text/markdown")
+                st.download_button("📥 Download Product Documentation", product_md, "product_docs.md", "text/markdown")
 
-                st.subheader("🗂 IDE Uyumlu Kanban Görev Listesi")
+                st.subheader("🗂 IDE-Compatible Kanban Task List")
                 st.markdown(ide_tasks_md)
-                st.download_button("📥 Kanban Görevlerini İndir", ide_tasks_md, "dev_tasks.md", "text/markdown")
+                st.download_button("📥 Download Kanban Tasks", ide_tasks_md, "dev_tasks.md", "text/markdown")
 
                 if save_to_disk:
                     try:
                         paths = persist_generated_outputs(docs, product_md, ide_tasks_md, tasks_plan)
-                        st.success("✅ Çıktılar outputs/ klasörüne kaydedildi.")
+                        st.success("✅ Outputs saved to outputs/ folder.")
                         st.code(json.dumps(paths, ensure_ascii=False, indent=2), language="json")
                     except Exception as save_error:
-                        st.warning(f"⚠️ Dosya kaydetme hatası: {save_error}")
-                        st.info("Çıktılar sadece tarayıcıda görüntülendi, indirme butonlarını kullanabilirsiniz.")
+                        st.warning(f"⚠️ File save error: {save_error}")
+                        st.info("Outputs are only displayed in browser, you can use download buttons.")
 
                 if tasks_plan is not None:
-                    st.subheader("📌 Yapılandırılmış Görev Planı (JSON)")
+                    st.subheader("📌 Structured Task Plan (JSON)")
                     st.download_button(
-                        "📥 Görev Planını İndir",
+                        "📥 Download Task Plan",
                         json.dumps(tasks_plan, ensure_ascii=False, indent=2),
                         file_name="tasks_plan.json",
                         mime="application/json",
@@ -2369,44 +2369,44 @@ if st.button("🚀 Doküman ve IDE Görevlerini Oluştur"):
 
             except ValueError as ve:
                 if "API anahtarı" in str(ve) or "403" in str(ve):
-                    st.error("🔑 API Anahtarı Sorunu Tespit Edildi")
+                    st.error("🔑 API Key Issue Detected")
                     st.info("""
-                    **Çözüm Önerileri:**
-                    1. OpenRouter hesabınızda kredi olduğundan emin olun
-                    2. API anahtarının doğru olduğunu kontrol edin
-                    3. Seçili model'e erişim izniniz olduğunu doğrulayın
-                    4. Daha ucuz bir model (GPT-3.5-turbo) deneyin
+                    **Solution Suggestions:**
+                    1. Ensure you have credits in your OpenRouter account
+                    2. Check that your API key is correct
+                    3. Verify you have access permission for the selected model
+                    4. Try a cheaper model (GPT-3.5-turbo)
                     """)
                 elif "rate limit" in str(ve).lower():
-                    st.error("⏱️ API rate limit aşıldı. Lütfen birkaç dakika bekleyip tekrar deneyin.")
+                    st.error("⏱️ API rate limit exceeded. Please wait a few minutes and try again.")
                 else:
-                    st.error(f"⚠️ API Hatası: {ve}")
+                    st.error(f"⚠️ API Error: {ve}")
                     if "403" in str(ve):
-                        st.warning("💡 403 Forbidden: API anahtarı veya model erişim izni sorunu olabilir.")
+                        st.warning("💡 403 Forbidden: Could be an API key or model access permission issue.")
             
             except TimeoutError as te:
-                st.error("⏳ İşlem zaman aşımına uğradı. API yanıt süreleri uzun olabilir, lütfen tekrar deneyin.")
-                st.info("💡 İpucu: Daha kısa ürün fikri tanımı yapmayı deneyin.")
+                st.error("⏳ Operation timed out. API response times may be long, please try again.")
+                st.info("💡 Tip: Try a shorter product idea description.")
             
             except ConnectionError as ce:
-                st.error("🌐 Bağlantı sorunu: İnternet bağlantınızı kontrol edin.")
-                st.info(f"Detay: {ce}")
+                st.error("🌐 Connection problem: Check your internet connection.")
+                st.info(f"Detail: {ce}")
             
             except json.JSONDecodeError as je:
-                st.error("📝 AI modeli geçersiz JSON döndürdü - otomatik düzeltme sistemi devreye girdi.")
-                st.info("💡 Bu genellikle ücretsiz modellerde olur. Premium model deneyin veya tekrar deneyin.")
-                if st.checkbox("JSON Hata Detayını Göster"):
+                st.error("📝 AI model returned invalid JSON - automatic correction system engaged.")
+                st.info("💡 This usually happens with free models. Try a premium model or try again.")
+                if st.checkbox("Show JSON Error Details"):
                     st.code(str(je))
-                    st.caption("Bu hata AI model'inin JSON format kurallarına uymayan yanıt vermesinden kaynaklanıyor.")
+                    st.caption("This error is caused by the AI model giving a response that doesn't conform to JSON format rules.")
             
             except Exception as e:
-                st.error("❌ Beklenmeyen bir hata oluştu.")
+                st.error("❌ An unexpected error occurred.")
                 error_details = {
                     "error_type": type(e).__name__,
                     "error_message": str(e),
                     "timestamp": datetime.now().isoformat()
                 }
                 
-                with st.expander("🔍 Hata Detayları"):
+                with st.expander("🔍 Error Details"):
                     st.code(json.dumps(error_details, ensure_ascii=False, indent=2), language="json")
-                    st.info("Bu hatayı rapor etmek istiyorsanız yukarıdaki detayları kopyalayabilirsiniz.")
+                    st.info("If you want to report this error, you can copy the details above.")
