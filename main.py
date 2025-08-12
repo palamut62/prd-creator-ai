@@ -2159,16 +2159,212 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Clear outputs folder on startup
+def clear_outputs_folder():
+    """Clear all files in the outputs folder on application startup."""
+    outputs_dir = Path("outputs")
+    if outputs_dir.exists():
+        for file in outputs_dir.glob("*"):
+            if file.is_file():
+                try:
+                    file.unlink()
+                except Exception:
+                    pass  # Ignore file deletion errors
+
+async def generate_initial_document(product_idea: str, model_name: str) -> str:
+    """Generate initial.md document based on CLAUDE.md guidelines."""
+    
+    # Read CLAUDE.md guidelines
+    claude_md_path = Path("Examples/CLAUDE.md")
+    claude_guidelines = ""
+    if claude_md_path.exists():
+        with open(claude_md_path, "r", encoding="utf-8") as f:
+            claude_guidelines = f.read()
+    
+    # Create initial document prompt
+    initial_prompt = f"""You are an expert software architect creating an initial project specification document based on CLAUDE.md guidelines.
+
+CLAUDE.MD GUIDELINES:
+{claude_guidelines}
+
+USER'S PRODUCT IDEA:
+{product_idea}
+
+Please create an initial.md document that follows the CLAUDE.md guidelines. The document should include:
+
+## FEATURE:
+- Brief description of the main features and functionality
+- Core technology requirements
+- Key integrations needed
+
+## EXAMPLES:
+- Reference to any relevant examples or patterns to follow
+- Best practices to implement
+
+## DOCUMENTATION:
+- Links to relevant documentation
+- API references needed
+
+## OTHER CONSIDERATIONS:
+- Setup requirements
+- Environment considerations
+- Testing approach
+- Any specific requirements
+
+Format as a clear markdown document that follows the CLAUDE.md structure and principles. Be concise but include all necessary information for development.
+
+Return only the markdown content, no additional text."""
+
+    timeout = aiohttp.ClientTimeout(total=120, connect=30)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        result = await call_agent_async(
+            session, 
+            "Initial Document Agent", 
+            initial_prompt, 
+            require_json=False, 
+            timeout=60, 
+            model_name=model_name
+        )
+    
+    return result
+
+async def generate_comprehensive_prp(initial_md: str, product_idea: str, model_name: str, app_name: str) -> str:
+    """Generate comprehensive PRP document using prp_base.md template and EXAMPLE_multi_agent_prp.md as reference."""
+    
+    # Read template files
+    prp_base_path = Path("Examples/prp_base.md")
+    example_prp_path = Path("Examples/EXAMPLE_multi_agent_prp.md")
+    
+    prp_base = ""
+    example_prp = ""
+    
+    if prp_base_path.exists():
+        with open(prp_base_path, "r", encoding="utf-8") as f:
+            prp_base = f.read()
+    
+    if example_prp_path.exists():
+        with open(example_prp_path, "r", encoding="utf-8") as f:
+            example_prp = f.read()
+    
+    # Create comprehensive PRP prompt
+    prp_prompt = f"""You are an expert technical project manager creating a comprehensive Project Requirements and Procedures (PRP) document.
+
+PRP BASE TEMPLATE:
+{prp_base}
+
+EXAMPLE PRP DOCUMENT (for reference):
+{example_prp}
+
+INITIAL PROJECT SPECIFICATION:
+{initial_md}
+
+ORIGINAL PRODUCT IDEA:
+{product_idea}
+
+APPLICATION NAME: {app_name}
+
+Please create a comprehensive PRP document for "{app_name}" using the prp_base.md template structure and following the patterns shown in EXAMPLE_multi_agent_prp.md.
+
+The PRP should include:
+
+1. **Purpose & Core Principles** - Based on the initial.md analysis
+2. **Goal** - Clear, specific end state for {app_name}  
+3. **Why** - Business value, integration points, problems solved
+4. **What** - User-visible behavior and technical requirements
+5. **Success Criteria** - Measurable outcomes
+6. **All Needed Context** - Documentation, references, codebase context
+7. **Implementation Blueprint** - Data models, task breakdown, integration points
+8. **Validation Loop** - Testing strategy, quality gates
+9. **Anti-Patterns to Avoid**
+
+Focus on making this actionable for AI agents to implement. Include specific file structures, code patterns, and validation steps.
+
+Return a comprehensive markdown document following the prp_base.md structure."""
+
+    timeout = aiohttp.ClientTimeout(total=180, connect=30)
+    async with aiohttp.ClientSession(timeout=timeout) as session:
+        result = await call_agent_async(
+            session, 
+            "PRP Analysis Agent", 
+            prp_prompt, 
+            require_json=False, 
+            timeout=120, 
+            model_name=model_name
+        )
+    
+    return result
+
+def save_new_workflow_outputs(initial_md: str, comprehensive_prp: str, app_name: str):
+    """Save only initial.md and appname_prp.md files to outputs folder."""
+    outputs_dir = Path("outputs")
+    outputs_dir.mkdir(exist_ok=True)
+    
+    # Save initial.md
+    initial_path = outputs_dir / "initial.md"
+    with open(initial_path, "w", encoding="utf-8") as f:
+        f.write(initial_md)
+    
+    # Save comprehensive PRP
+    prp_filename = f"{app_name.replace(' ', '_')}_prp.md"
+    prp_path = outputs_dir / prp_filename
+    with open(prp_path, "w", encoding="utf-8") as f:
+        f.write(comprehensive_prp)
+    
+    return {
+        "initial_md": str(initial_path),
+        "comprehensive_prp": str(prp_path)
+    }
+
+async def generate_new_workflow(product_idea: str, model_name: str = None, progress_callback=None):
+    """New 2-step workflow: Generate initial.md then comprehensive PRP document."""
+    if model_name is None:
+        model_name = MODEL_NAME
+    
+    # Extract app name from product idea
+    app_name = product_idea.split('.')[0].split(',')[0].strip()
+    if len(app_name) > 50:
+        app_name = app_name[:50] + "..."
+    app_name = re.sub(r'[^\w\s-]', '', app_name).strip()
+    if not app_name:
+        app_name = "Product"
+    
+    # Step 1: Generate initial.md
+    if progress_callback:
+        progress_callback(20, "📋 Initial Document Agent analyzing requirements...")
+    
+    initial_md = await generate_initial_document(product_idea, model_name)
+    
+    # Step 2: Generate comprehensive PRP
+    if progress_callback:
+        progress_callback(60, "🔬 PRP Analysis Agent creating comprehensive specification...")
+    
+    comprehensive_prp = await generate_comprehensive_prp(initial_md, product_idea, model_name, app_name)
+    
+    if progress_callback:
+        progress_callback(100, "✅ Completed!")
+    
+    return initial_md, comprehensive_prp, app_name
+
+# Initialize session state and clear outputs
+if 'app_initialized' not in st.session_state:
+    clear_outputs_folder()
+    st.session_state.app_initialized = True
+
 # Sidebar info
 with st.sidebar:
     st.header("ℹ️ PRD Creator")
-    st.write("🤖 **10 Expert AI Agents** for comprehensive product documentation")
+    st.write("🤖 **2-Step AI Workflow** for project specifications")
     
-    with st.expander("📋 AI Agents"):
+    with st.expander("📋 AI Workflow"):
         st.write("""
-        • 🎨 Brand • 🏗️ Tech • 📋 PM • 📑 Product  
-        • 📅 Timeline • 💼 Business • 🎨 UI/UX
-        • 🧪 Test • 🗄️ Data • 🚀 DevOps • 🗂️ Tasks
+        **Step 1:** 📋 Initial Document Agent
+        • Analyzes requirements using CLAUDE.md guidelines
+        • Creates initial.md specification
+        
+        **Step 2:** 🔬 PRP Analysis Agent  
+        • Reviews initial specification
+        • Generates comprehensive PRP document
+        • Uses prp_base.md template structure
         """)
     
     st.divider()
@@ -2183,10 +2379,10 @@ with st.sidebar:
         remaining = st.session_state.rate_limiter.max_requests - len(st.session_state.rate_limiter.requests)
         st.metric("Remaining Requests", f"{max(0, remaining)}/5")
 
-st.title("🚀 AI Powered PRD Creator")
+st.title("🚀 AI Powered Project Specification Creator")
 st.markdown("""
-### From Product Ideas to Professional Documentation
-Create branding, technical specifications, detailed feature lists, and PRD documents with 10 expert AI agents.
+### From Product Ideas to Comprehensive PRP Documents  
+Transform your product ideas into structured project specifications using a 2-step AI workflow that creates initial requirements and comprehensive Project Requirements & Procedures (PRP) documents.
 """)
 
 # API connection test in sidebar
@@ -2284,9 +2480,9 @@ with col2:
     except Exception:
         st.caption(f"Model: {selected_model}")
     
-    save_to_disk = st.checkbox("Save outputs to outputs/ folder in project")
+    save_to_disk = st.checkbox("Save outputs to outputs/ folder in project", value=True)
 
-if st.button("🚀 Generate Documents and IDE Tasks"):
+if st.button("🚀 Generate Project Specifications"):
     # Rate limiting check
     allowed, wait_time = st.session_state.rate_limiter.is_allowed()
     if not allowed:
@@ -2314,14 +2510,11 @@ if st.button("🚀 Generate Documents and IDE Tasks"):
                 # Initial progress
                 update_progress(10, "🚀 Initializing process...")
                 
-                docs, product_md, ide_tasks_md, tasks_plan = asyncio.run(
-                    generate_all(sanitized_idea, selected_model, progress_callback=update_progress)
+                initial_md, comprehensive_prp, app_name = asyncio.run(
+                    generate_new_workflow(sanitized_idea, selected_model, progress_callback=update_progress)
                 )
                 
-                # Document validation
-                validation_results = validate_document_quality(docs)
-                
-                status_text.text("✅ Enterprise-grade documents successfully generated!")
+                status_text.text("✅ Project specification documents successfully generated!")
                 progress_bar.progress(100)
                 
                 # Clear progress bar and status
@@ -2330,42 +2523,24 @@ if st.button("🚀 Generate Documents and IDE Tasks"):
                 progress_bar.empty()
                 status_text.empty()
                 
-                # Show validation results
-                if validation_results["issues"]:
-                    with st.expander("⚠️ Quality Control Notes"):
-                        st.write("**Quality Score:**", f"{validation_results['score']}/100")
-                        st.write("**Identified Issues:**")
-                        for issue in validation_results["issues"]:
-                            st.write(f"- {issue}")
-                else:
-                    st.success(f"🏆 Perfect quality score: {validation_results['score']}/100")
+                st.success(f"🏆 Successfully created project specifications for: {app_name}")
 
-                st.subheader("📄 Product Documentation")
-                st.markdown(product_md)
-                st.download_button("📥 Download Product Documentation", product_md, "product_docs.md", "text/markdown")
+                st.subheader("📋 Initial Project Specification")
+                st.markdown(initial_md)
+                st.download_button("📥 Download Initial Specification", initial_md, "initial.md", "text/markdown")
 
-                st.subheader("🗂 IDE-Compatible Kanban Task List")
-                st.markdown(ide_tasks_md)
-                st.download_button("📥 Download Kanban Tasks", ide_tasks_md, "dev_tasks.md", "text/markdown")
+                st.subheader("📑 Comprehensive PRP Document")
+                st.markdown(comprehensive_prp)
+                st.download_button("📥 Download Comprehensive PRP", comprehensive_prp, f"{app_name}_prp.md", "text/markdown")
 
                 if save_to_disk:
                     try:
-                        paths = persist_generated_outputs(docs, product_md, ide_tasks_md, tasks_plan)
-                        st.success("✅ Outputs saved to outputs/ folder.")
+                        paths = save_new_workflow_outputs(initial_md, comprehensive_prp, app_name)
+                        st.success("✅ Documents saved to outputs/ folder.")
                         st.code(json.dumps(paths, ensure_ascii=False, indent=2), language="json")
                     except Exception as save_error:
                         st.warning(f"⚠️ File save error: {save_error}")
-                        st.info("Outputs are only displayed in browser, you can use download buttons.")
-
-                if tasks_plan is not None:
-                    st.subheader("📌 Structured Task Plan (JSON)")
-                    st.download_button(
-                        "📥 Download Task Plan",
-                        json.dumps(tasks_plan, ensure_ascii=False, indent=2),
-                        file_name="tasks_plan.json",
-                        mime="application/json",
-                    )
-                    st.code(json.dumps(tasks_plan, ensure_ascii=False, indent=2), language="json")
+                        st.info("Documents are only displayed in browser, you can use download buttons.")
 
             except ValueError as ve:
                 if "API anahtarı" in str(ve) or "403" in str(ve):
